@@ -21,3 +21,18 @@
 *.i*86
 *.x86_64
 *.hex
+
+# some autotools files I don't care about right now
+INSTALL
+AUTHORS
+ChangeLog
+COPYING
+README
+NEWS
+
+
+aclocal.m4
+autom4te.cache
+build-aux
+Makefile.in
+
