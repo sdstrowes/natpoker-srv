@@ -32,7 +32,7 @@ int stun_validate(struct stun_hdr *msg)
 		break;
 	}
 	default: {
-		log_msg("Unknown packet type");
+		log_err("Unknown packet type: %u", ntohs(msg->msg_type));
 		return 0;
 	}
 	}
