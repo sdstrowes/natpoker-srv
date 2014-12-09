@@ -13,7 +13,7 @@
 
 #define NP_NAME "NatPoker"
 #define NP_VERSION "0.1"
-#define NP_URL "https://github.com/sdstrowes/natpoker-srv"
+#define NP_URL "https://github.com/nat-poker/natpoker-srv"
 
 #define BUFFER_SIZE 1280
 
