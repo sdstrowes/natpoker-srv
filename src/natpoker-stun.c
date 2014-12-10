@@ -47,7 +47,7 @@ int stun_validate(struct stun_hdr *msg)
 int stun_add_mapped_addr(char* buffer, int* len, struct sockaddr* addr)
 {
 	struct stun_attr attr = { 0 };
-	attr.type = htons(STUN_MAPPED_ADDRESS);
+	attr.type = htons(STUN_ATTR_MAPPED_ADDRESS);
 	attr.len = htons(8);
 	switch(addr->sa_family) {
 	case AF_INET: {
@@ -79,7 +79,7 @@ int stun_add_mapped_addr(char* buffer, int* len, struct sockaddr* addr)
 int stun_add_xormapped_addr(char* buffer, int* len, struct sockaddr* addr)
 {
 	struct stun_attr attr = { 0 };
-	attr.type = htons(STUN_XORMAPPED_ADDRESS);
+	attr.type = htons(STUN_ATTR_XORMAPPED_ADDRESS);
 	attr.len = htons(8);
 	switch(addr->sa_family) {
 	case AF_INET: {
@@ -141,7 +141,7 @@ int stun_add_software(char* buffer, int* len)
 	length -= strlen(NP_URL);
 	pos += strlen(NP_URL);
 
-	attr->type = htons(STUN_SOFTWARE);
+	attr->type = htons(STUN_ATTR_SOFTWARE);
 
 	// Figure out padding
 	int real_len = strlen(string);

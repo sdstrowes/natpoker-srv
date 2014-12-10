@@ -6,10 +6,20 @@
 #define STUN_MSG_BINDING_REQ 0x0001
 #define STUN_MSG_BINDING_RESP 0x0101
 
-#define STUN_MAPPED_ADDRESS    0x0001
-#define STUN_XORMAPPED_ADDRESS 0x0020
-#define STUN_SOFTWARE          0x8022
-#define STUN_RESPONSE_ORIGIN   0x802b
+// 0x0000-0x3FFF	IETF Review	comprehension-required range
+#define STUN_ATTR_MAPPED_ADDRESS    0x0001
+#define STUN_ATTR_USERNAME          0x0006
+#define STUN_ATTR_MESSAGE_INTEGRITY 0x0008
+#define STUN_ATTR_ERROR_CODE        0x0009
+#define STUN_ATTR_UNKNOWN_ATTR      0x000a
+#define STUN_ATTR_REALM             0x0014
+#define STUN_ATTR_NONCE             0x0015
+#define STUN_ATTR_XORMAPPED_ADDRESS 0x0020
+// 0x8000-0xBFFF	IETF Review	comprehension-optional range
+#define STUN_ATTR_SOFTWARE          0x8022
+#define STUN_ATTR_ALTERNATE_SERVER  0x8023
+#define STUN_ATTR_FINGERPRINT       0x8028
+#define STUN_ATTR_RESPONSE_ORIGIN   0x802b
 
 #define NP_NAME "NatPoker"
 #define NP_VERSION "0.1"
