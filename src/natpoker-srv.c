@@ -38,7 +38,7 @@ uint16_t inet_port64(struct sockaddr *addr)
 	return -1;
 }
 
-static void recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
+static void udp_recv_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 {
 	if (EV_ERROR & revents) {
 		log_err("received invalid event");
@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
 	ev_io w_client;
 	struct ev_loop *loop = ev_default_loop(0);
 	ev_io* foo = &w_client;
-	ev_io_init(foo, recv_cb, sd, EV_READ);
+	ev_io_init(foo, udp_recv_cb, sd, EV_READ);
 	ev_io_start(loop, &w_client);
 
 	ev_loop(loop, 0);
