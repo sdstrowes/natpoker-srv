@@ -46,75 +46,98 @@ int stun_validate(struct stun_hdr *msg)
 
 int stun_add_mapped_addr(char* buffer, int* len, struct sockaddr* addr)
 {
-	struct stun_attr attr = { 0 };
-	attr.type = htons(STUN_ATTR_MAPPED_ADDRESS);
-	attr.len = htons(8);
 	switch(addr->sa_family) {
 	case AF_INET: {
 		struct sockaddr_in *addr4 = (struct sockaddr_in*)addr;
+		struct stun_attr4 attr = { 0 };
+		attr.type = htons(STUN_ATTR_MAPPED_ADDRESS);
+		attr.len = htons(8);
 		attr.pf = 0x01;
 		attr.port = addr4->sin_port;
 		attr.ip = addr4->sin_addr.s_addr;
+
+		memcpy(buffer, &attr, sizeof(attr));
+		*len = sizeof(attr);
 		break;
 	}
 	case AF_INET6: {
-		return 0;
-//		struct sockaddr_in6 *addr6 = (struct sockaddr_in6*)addr;
-//		attr.pf = 0x02;
-//		attr.port = addr6->sin6_port;
-//		memcpy(&attr.ip, &addr6->sin6_addr, sizeof(attr.ip));
-//		break;
+		struct sockaddr_in6 *addr6 = (struct sockaddr_in6*)addr;
+		struct stun_attr6 attr = { 0 };
+		attr.type = htons(STUN_ATTR_MAPPED_ADDRESS);
+		attr.len = htons(20);
+		attr.pf = 0x02;
+		attr.port = addr6->sin6_port;
+		memcpy(&attr.ip, &addr6->sin6_addr, sizeof(addr6->sin6_addr));
+
+		memcpy(buffer, &attr, sizeof(attr));
+		*len = sizeof(attr);
+		break;
 	}
 	default: {
 		return 0;
 	}
 	}
-
-	memcpy(buffer, &attr, sizeof(attr));
-	*len = sizeof(attr);
 
 	return 1;
 }
 
-int stun_add_xormapped_addr(char* buffer, int* len, struct sockaddr* addr)
+int stun_add_xormapped_addr(struct stun_msgid t_id, char* buffer, int* len, struct sockaddr* addr)
 {
-	struct stun_attr attr = { 0 };
-	attr.type = htons(STUN_ATTR_XORMAPPED_ADDRESS);
-	attr.len = htons(8);
+	uint16_t magic16 = STUN_COOKIE >> 16;
 	switch(addr->sa_family) {
 	case AF_INET: {
 		struct sockaddr_in *addr4 = (struct sockaddr_in*)addr;
+		struct stun_attr4 attr = { 0 };
+		attr.type = htons(STUN_ATTR_XORMAPPED_ADDRESS);
+		attr.len = htons(8);
 		attr.pf = 0x01;
 		uint32_t xorip   = ntohl(addr4->sin_addr.s_addr) ^ STUN_COOKIE;
-		uint16_t magic16 = STUN_COOKIE >> 16;
 		uint16_t xorport = ntohs(addr4->sin_port) ^ magic16;
 
 		attr.port = htons(xorport);
 		attr.ip   = htonl(xorip);
+
+		memcpy(buffer, &attr, sizeof(attr));
+		*len = sizeof(attr);
+
 		break;
 	}
 	case AF_INET6: {
-		return 0;
-//		struct sockaddr_in6 *addr6 = (struct sockaddr_in6*)addr;
-//		attr.pf = 0x02;
-//		attr.port = addr6->sin6_port;
-//		memcpy(&attr.ip, &addr6->sin6_addr, sizeof(attr.ip));
-//		break;
+		struct sockaddr_in6 *addr6 = (struct sockaddr_in6*)addr;
+		struct stun_attr6 attr = { 0 };
+		attr.type = htons(STUN_ATTR_XORMAPPED_ADDRESS);
+		attr.len = htons(20);
+		attr.pf = 0x02;
+
+		uint16_t xorport = ntohs(addr6->sin6_port) ^ magic16;
+		attr.port = htons(xorport);
+		memcpy(&attr.ip, &addr6->sin6_addr, sizeof(addr6->sin6_addr));
+
+		int i;
+		uint32_t tmp = htonl(STUN_COOKIE);
+		for (i = 0; i < 4;  i++) {
+			attr.ip[i] = addr6->sin6_addr.s6_addr[i] ^ ((uint8_t*)&tmp)[i];
+		}
+		for (i = 0; i < 12; i++) {
+			attr.ip[i+4] = addr6->sin6_addr.s6_addr[i+4] ^ t_id.b[i];
+		}
+
+		memcpy(buffer, &attr, sizeof(attr));
+		*len = sizeof(attr);
+
+		break;
 	}
 	default: {
 		return 0;
 	}
 	}
-
-	memcpy(buffer, &attr, sizeof(attr));
-	*len = sizeof(attr);
 
 	return 1;
 }
 
 int stun_add_software(char* buffer, int* len)
 {
-	struct stun_attr_sw *attr = calloc(sizeof(struct stun_attr) + 762, 1);
+	struct stun_attr_sw *attr = calloc(sizeof(struct stun_attr_sw) + 762, 1);
 
 	char string[763]; // rfc5389, s.15.10
 	int length = sizeof(string);
@@ -155,8 +178,7 @@ int stun_add_software(char* buffer, int* len)
 	free(attr);
 	return 1;
 }
-
-int stun_send_response(int sd, struct stun_hdr* stun_cli, struct sockaddr* addr, socklen_t peer_len)
+int stun_send_udp_response(int sd, struct stun_hdr* stun_cli, struct sockaddr* addr, socklen_t peer_len)
 {
 	int rc;
 	char *buffer = calloc(BUFFER_SIZE, 1);
@@ -173,7 +195,7 @@ int stun_send_response(int sd, struct stun_hdr* stun_cli, struct sockaddr* addr,
 	stun_add_mapped_addr(buffer+msg_len, &attr_len, addr);
 	msg_len += attr_len;
 
-	stun_add_xormapped_addr(buffer+msg_len, &attr_len, addr);
+	stun_add_xormapped_addr(stun_cli->msg_id, buffer+msg_len, &attr_len, addr);
 	msg_len += attr_len;
 
 	stun_add_software(buffer+msg_len, &attr_len);
@@ -192,4 +214,44 @@ int stun_send_response(int sd, struct stun_hdr* stun_cli, struct sockaddr* addr,
 	return rc;
 }
 
+
+int stun_send_tcp_response(int sd, struct stun_hdr* stun_cli)
+{
+	int rc;
+	char *buffer = calloc(BUFFER_SIZE, 1);
+	int msg_len = 0;
+	struct stun_hdr stun_srv;
+
+	struct sockaddr peer;
+	socklen_t peer_len = sizeof(peer);
+	getpeername(sd, &peer, &peer_len);
+
+	stun_set_msg_type(&stun_srv, STUN_MSG_BINDING_RESP);
+	stun_set_msg_cookie(&stun_srv);
+	stun_copy_msg_id(stun_cli, &stun_srv);
+
+	msg_len = sizeof(struct stun_hdr);
+
+	int attr_len = 0;
+	stun_add_mapped_addr(buffer+msg_len, &attr_len, &peer);
+	msg_len += attr_len;
+
+	stun_add_xormapped_addr(stun_cli->msg_id, buffer+msg_len, &attr_len, &peer);
+	msg_len += attr_len;
+
+	stun_add_software(buffer+msg_len, &attr_len);
+	msg_len += attr_len;
+
+	stun_set_msg_len(&stun_srv, msg_len - sizeof(struct stun_hdr));
+
+	memcpy(buffer, &stun_srv, sizeof(stun_srv));
+
+	rc = send(sd, buffer, msg_len, 0);
+	if (rc == -1) {
+		log_err("error sending: %s", strerror(errno));
+	}
+
+	free(buffer);
+	return rc;
+}
 

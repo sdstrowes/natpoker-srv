@@ -40,7 +40,7 @@ struct stun_hdr
 	struct stun_msgid msg_id;
 } __attribute__((packed));
 
-struct stun_attr
+struct stun_attr4
 {
 	uint16_t type;
 	uint16_t len;
@@ -48,6 +48,16 @@ struct stun_attr
 	uint8_t  pf;
 	uint16_t port;
 	uint32_t ip;
+} __attribute__((packed));
+
+struct stun_attr6
+{
+	uint16_t type;
+	uint16_t len;
+	uint8_t  reserved;
+	uint8_t  pf;
+	uint16_t port;
+	uint8_t ip[16];
 } __attribute__((packed));
 
 
@@ -70,11 +80,13 @@ int stun_validate(struct stun_hdr *msg);
 
 int stun_add_mapped_addr(char* buffer, int* len, struct sockaddr* addr);
 
-int stun_add_xormapped_addr(char* buffer, int* len, struct sockaddr* addr);
+int stun_add_xormapped_addr(struct stun_msgid t_id, char* buffer, int* len, struct sockaddr* addr);
 
 int stun_add_software(char* buffer, int* len);
 
-int stun_send_response(int sd, struct stun_hdr* stun_cli, struct sockaddr* addr, socklen_t peer_len);
+int stun_send_udp_response(int sd, struct stun_hdr* stun_cli, struct sockaddr* addr, socklen_t peer_len);
+
+int stun_send_tcp_response(int sd, struct stun_hdr* stun_cli);
 
 #endif
 
