@@ -1,3 +1,5 @@
+## Process this file with automake to produce Makefile.in
+
 NATP_LDADD = @NATP_LDADD@
 
 bin_PROGRAMS = natpoker_srv			
